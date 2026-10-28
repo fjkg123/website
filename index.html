@@ -856,64 +856,51 @@ async function submitBooking(event) {
    取消预约
 ========================================== */
 
+
 async function cancelBooking(id) {
-  if (!db) {
-    showToast("数据库尚未连接", true);
-    return;
-  }
 
-  if (!confirm("确定取消该会议室预约吗？")) return;
-
-  let tokens = {};
-
-  try {
-    tokens = JSON.parse(
-      localStorage.getItem(TOKEN_KEY) || "{}"
-    );
-  } catch (e) {}
-
-  let token = tokens[id];
-
-  if (!token) {
-    token = prompt("请输入预约时获得的取消凭证：");
-  }
-
-  if (!token) return;
-
-  try {
-    const { data, error } = await db.rpc(
-      "cancel_meeting_booking",
-      {
-        p_id: id,
-        p_cancel_token: token
-      }
-    );
-
-    if (error) throw error;
-
-    if (!data) {
-      showToast("取消凭证不正确", true);
-      return;
+    if (!db) {
+        showToast("数据库尚未连接", true);
+        return;
     }
 
-    delete tokens[id];
+    // 取消前确认
+    if (!confirm("确定取消这条会议室预约吗？")) {
+        return;
+    }
 
     try {
-      localStorage.setItem(
-        TOKEN_KEY,
-        JSON.stringify(tokens)
-      );
-    } catch (e) {}
+        // 直接删除预约，不再需要取消凭证
+        const { data, error } = await db
+            .from("meeting_bookings")
+            .delete()
+            .eq("id", id)
+            .select("id");
 
-    showToast("预约已取消");
+        if (error) {
+            throw error;
+        }
 
-    await loadBookings();
+        if (!data || data.length === 0) {
+            showToast(
+                "取消失败：预约不存在或没有删除权限",
+                true
+            );
+            return;
+        }
 
-  } catch (error) {
-    console.error("取消预约失败:", error);
-    showToast("取消失败，请稍后重试", true);
-  }
+        // 取消成功
+        showToast("预约已取消");
+
+        // 重新读取所有预约
+        await loadBookings();
+
+    } catch (error) {
+        console.error("取消预约失败:", error);
+        showToast("取消失败，请检查数据库权限", true);
+    }
 }
+
 
 /* ==========================================
    数据库初始化和实时同步
