@@ -857,6 +857,7 @@ async function submitBooking(event) {
 ========================================== */
 
 
+
 async function cancelBooking(id) {
 
     if (!db) {
@@ -864,13 +865,12 @@ async function cancelBooking(id) {
         return;
     }
 
-    // 取消前确认
+    // 只确认，不需要取消凭证
     if (!confirm("确定取消这条会议室预约吗？")) {
         return;
     }
 
     try {
-        // 直接删除预约，不再需要取消凭证
         const { data, error } = await db
             .from("meeting_bookings")
             .delete()
@@ -882,17 +882,12 @@ async function cancelBooking(id) {
         }
 
         if (!data || data.length === 0) {
-            showToast(
-                "取消失败：预约不存在或没有删除权限",
-                true
-            );
+            showToast("取消失败：数据库没有删除该记录", true);
             return;
         }
 
-        // 取消成功
         showToast("预约已取消");
 
-        // 重新读取所有预约
         await loadBookings();
 
     } catch (error) {
