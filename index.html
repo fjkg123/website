@@ -835,13 +835,6 @@ async function submitBooking(event) {
     await loadBookings();
     showToast("预约成功！");
 
-    alert(
-      "预约成功！\n\n" +
-      "请保存以下取消凭证：\n" +
-      cancelToken + "\n\n" +
-      "如需在其他设备取消预约，需要输入此凭证。"
-    );
-
   } catch (error) {
     console.error("预约失败:", error);
 
